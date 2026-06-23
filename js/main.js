@@ -175,6 +175,83 @@
     });
   })();
 
+  /* ---------- Project detail popup ---------- */
+  (function () {
+    var modal = document.getElementById('projModal');
+    var data = window.PROJECT_DETAILS;
+    if (!modal || !data) return;
+    var pmArea = document.getElementById('pmArea');
+    var pmTitle = document.getElementById('pmTitle');
+    var pmBody = document.getElementById('pmBody');
+    var lastFocus = null;
+
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function section(label, text) {
+      if (!text) return '';
+      return '<div class="modal__section"><p class="modal__label">' + label +
+             '</p><p class="modal__text">' + esc(text) + '</p></div>';
+    }
+    function flow(label, text) {
+      if (!text) return '';
+      // split a process sentence into steps
+      var steps = text.replace(/\band\b/g, ',').split(/[;,]/)
+        .map(function (s) { return s.trim().replace(/\.$/, ''); })
+        .filter(function (s) { return s.length > 1; });
+      if (steps.length < 2) return section(label, text);
+      var html = '<div class="modal__section"><p class="modal__label">' + label + '</p><div class="flow">';
+      steps.forEach(function (s, i) {
+        if (i) html += '<span class="flow__arrow">→</span>';
+        html += '<span class="flow__step"><span class="flow__num">' + (i + 1) + '</span>' + esc(s) + '</span>';
+      });
+      return html + '</div></div>';
+    }
+    function techs(label, text) {
+      if (!text) return '';
+      var list = text.split(/;|·/).map(function (t) { return t.trim(); }).filter(Boolean);
+      var html = '<div class="modal__section"><p class="modal__label">' + label + '</p><div class="modal__techs">';
+      list.forEach(function (t) { html += '<span>' + esc(t) + '</span>'; });
+      return html + '</div></div>';
+    }
+
+    function openModal(id) {
+      var d = data[id];
+      if (!d) return;
+      lastFocus = document.activeElement;
+      pmArea.textContent = d.area || '';
+      pmTitle.textContent = d.name || '';
+      pmBody.innerHTML =
+        section('Business solution', d.business) +
+        section('Architecture', d.architecture) +
+        section('Methodology', d.methodology) +
+        flow('Process', d.process) +
+        techs('Technologies', d.technologies);
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      var closeBtn = document.getElementById('pmClose');
+      if (closeBtn) closeBtn.focus();
+    }
+    function closeModal() {
+      modal.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    document.querySelectorAll('.acc__item').forEach(function (li) {
+      li.addEventListener('click', function () { openModal(li.getAttribute('data-id')); });
+      li.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(li.getAttribute('data-id')); }
+      });
+    });
+    modal.addEventListener('click', function (e) {
+      if (e.target.hasAttribute('data-close')) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+  })();
+
   /* ---------- Guard placeholder links ---------- */
   document.querySelectorAll('[data-placeholder="true"]').forEach(function (el) {
     el.addEventListener('click', function (e) {
