@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Purchase Request App — Table Relationships</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffa94d;
+    --accent5: #74c0fc;
+    --text: #e8eaf6;
+    --muted: #8890b5;
+    --card-radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  /* ── TOP NAV ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; gap: 20px; height: 64px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+  header .logo { font-size: 1.1rem; font-weight: 700; color: var(--accent); letter-spacing: .5px; display: flex; align-items: center; gap: 10px; }
+  header .logo svg { width: 28px; height: 28px; }
+  .tab-bar { display: flex; gap: 4px; margin-left: auto; }
+  .tab-btn { background: none; border: none; color: var(--muted); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: .88rem; font-weight: 600; transition: all .2s; }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active { background: var(--accent); color: #fff; }
+
+  /* ── HERO ── */
+  .hero { background: linear-gradient(135deg, #1a1d27 0%, #12152b 60%, #0d1020 100%); padding: 40px 32px 32px; border-bottom: 1px solid var(--border); }
+  .hero h1 { font-size: 2rem; font-weight: 800; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+  .hero p { color: var(--muted); font-size: .95rem; }
+  .stats-row { display: flex; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; min-width: 130px; }
+  .stat-card .val { font-size: 2rem; font-weight: 800; }
+  .stat-card .lbl { font-size: .78rem; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+  .stat-card.c1 .val { color: var(--accent); }
+  .stat-card.c2 .val { color: var(--accent2); }
+  .stat-card.c3 .val { color: var(--accent4); }
+  .stat-card.c4 .val { color: var(--accent5); }
+  .stat-card.c5 .val { color: var(--accent3); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 32px; animation: fadeIn .3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .section-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+  .section-sub { color: var(--muted); font-size: .88rem; margin-bottom: 24px; }
+
+  /* ── ERD CANVAS ── */
+  #erd-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); overflow: hidden; position: relative; }
+  #erd-canvas { width: 100%; display: block; cursor: grab; }
+  #erd-canvas:active { cursor: grabbing; }
+  .erd-controls { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
+  .erd-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: .82rem; transition: all .2s; }
+  .erd-btn:hover { background: var(--accent); border-color: var(--accent); }
+  .erd-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+  .erd-legend-item { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--muted); }
+  .erd-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── TABLE CARDS GRID ── */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+  .tbl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); overflow: hidden; transition: transform .2s, box-shadow .2s; }
+  .tbl-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .tbl-card-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+  .tbl-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .tbl-card-header h3 { font-size: 1rem; font-weight: 700; }
+  .tbl-card-header span { font-size: .75rem; color: var(--muted); }
+  .col-list { padding: 0; list-style: none; max-height: 320px; overflow-y: auto; }
+  .col-list::-webkit-scrollbar { width: 4px; }
+  .col-list::-webkit-scrollbar-track { background: var(--surface); }
+  .col-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .col-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 20px; border-bottom: 1px solid rgba(255,255,255,.04); transition: background .15s; }
+  .col-row:hover { background: var(--surface2); }
+  .col-row:last-child { border-bottom: none; }
+  .col-name { font-size: .85rem; display: flex; align-items: center; gap: 8px; }
+  .col-name .pk-badge { background: rgba(108,99,255,.25); color: var(--accent); font-size: .65rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+  .col-name .fk-badge { background: rgba(0,212,170,.18); color: var(--accent2); font-size: .65rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+  .col-name .img-badge { background: rgba(255,169,77,.18); color: var(--accent4); font-size: .65rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+  .dtype-badge { font-size: .72rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+
+  .dt-lookup   { background: rgba(0,212,170,.15); color: var(--accent2); }
+  .dt-text     { background: rgba(116,192,252,.15); color: var(--accent5); }
+  .dt-number   { background: rgba(255,169,77,.15); color: var(--accent4); }
+  .dt-choice   { background: rgba(108,99,255,.15); color: var(--accent); }
+  .dt-currency { background: rgba(255,107,107,.15); color: var(--accent3); }
+  .dt-bool     { background: rgba(180,230,100,.15); color: #a3e635; }
+  .dt-date     { background: rgba(200,160,255,.15); color: #d8b4fe; }
+  .dt-richtext { background: rgba(255,200,100,.15); color: #fcd34d; }
+  .dt-file     { background: rgba(100,200,255,.15); color: #67e8f9; }
+  .dt-image    { background: rgba(255,180,150,.15); color: #fca5a5; }
+  .dt-url      { background: rgba(160,200,255,.15); color: #93c5fd; }
+  .dt-guid     { background: rgba(180,180,180,.15); color: #9ca3af; }
+
+  /* ── RELATIONSHIP MATRIX ── */
+  .matrix-wrap { overflow-x: auto; }
+  table.matrix { border-collapse: collapse; min-width: 600px; width: 100%; }
+  table.matrix th, table.matrix td { border: 1px solid var(--border); padding: 10px 14px; text-align: center; font-size: .83rem; }
+  table.matrix th { background: var(--surface2); font-weight: 700; }
+  table.matrix th.row-head { text-align: left; color: var(--text); }
+  .rel-cell { border-radius: 6px; padding: 4px 10px; font-size: .78rem; font-weight: 700; display: inline-block; }
+  .rel-1m   { background: rgba(108,99,255,.2); color: var(--accent); }
+  .rel-m1   { background: rgba(0,212,170,.2); color: var(--accent2); }
+  .rel-none { color: var(--border); }
+  .rel-self { background: var(--surface2); color: var(--muted); font-size: .75rem; }
+
+  /* ── FLOW DIAGRAM ── */
+  #flow-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 32px; overflow-x: auto; }
+  #flow-svg { display: block; margin: 0 auto; }
+
+  /* ── DATA TYPE BREAKDOWN ── */
+  .dtype-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+  .dtype-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; transition: transform .2s; }
+  .dtype-tile:hover { transform: translateY(-3px); }
+  .dtype-tile .count { font-size: 2.2rem; font-weight: 800; }
+  .dtype-tile .name { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+  .dtype-tile .bar { height: 4px; border-radius: 2px; margin-top: 14px; }
+
+  /* ── WORKFLOW ── */
+  .workflow-steps { display: flex; align-items: flex-start; gap: 0; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 12px; }
+  .wf-step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 18px; min-width: 160px; max-width: 180px; flex-shrink: 0; text-align: center; position: relative; }
+  .wf-arrow { font-size: 1.6rem; color: var(--muted); flex-shrink: 0; align-self: center; padding: 0 4px; }
+  .wf-step .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 800; margin: 0 auto 10px; }
+  .wf-step h4 { font-size: .88rem; font-weight: 700; margin-bottom: 4px; }
+  .wf-step p { font-size: .75rem; color: var(--muted); line-height: 1.4; }
+
+  /* ── TOOLTIP ── */
+  #tooltip { position: fixed; background: var(--surface2); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; font-size: .82rem; pointer-events: none; z-index: 9999; opacity: 0; transition: opacity .15s; max-width: 240px; line-height: 1.5; }
+  #tooltip.show { opacity: 1; }
+
+  /* ── DETAILS PANEL ── */
+  #detail-panel { position: fixed; right: 0; top: 64px; width: 320px; height: calc(100vh - 64px); background: var(--surface); border-left: 1px solid var(--border); padding: 24px; overflow-y: auto; transform: translateX(100%); transition: transform .3s; z-index: 50; }
+  #detail-panel.open { transform: translateX(0); }
+  #detail-panel h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  #detail-panel .close-btn { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+  .detail-field { padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: .83rem; }
+  .detail-field:last-child { border-bottom: none; }
+  .detail-field-name { color: var(--muted); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    header { padding: 0 16px; }
+    .hero, .section { padding: 20px 16px; }
+    .tab-btn { padding: 7px 10px; font-size: .8rem; }
+    .hero h1 { font-size: 1.4rem; }
+    #detail-panel { width: 100%; }
+  }
+
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+  .gradient-border { border: 1px solid transparent; background-clip: padding-box; position: relative; }
+  .gradient-border::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, var(--accent), var(--accent2)); z-index: -1; }
+
+  /* ── ARCHITECTURE ── */
+  .arch-intro { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; margin-bottom: 28px; font-size: .88rem; color: var(--muted); line-height: 1.7; }
+  .arch-intro strong { color: var(--text); }
+  .arch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .arch-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 26px 22px; transition: transform .2s, box-shadow .2s; position: relative; overflow: hidden; }
+  .arch-tile:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+  .arch-tile::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .arch-tile .arch-icon { font-size: 2rem; margin-bottom: 14px; }
+  .arch-tile h4 { font-size: .97rem; font-weight: 700; margin-bottom: 8px; }
+  .arch-tile p { font-size: .82rem; color: var(--muted); line-height: 1.65; }
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card { background: var(--surface); border-radius: 12px; padding: 18px 20px; border-left: 4px solid; }
+  .overview-card h5 { font-size: .9rem; font-weight: 700; margin-bottom: 6px; }
+  .overview-card p { font-size: .81rem; color: var(--muted); line-height: 1.55; }
+
+  /* ── APPROVAL THRESHOLDS ── */
+  .threshold-wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; margin-top: 14px; }
+  table.threshold-tbl { border-collapse: collapse; min-width: 340px; }
+  table.threshold-tbl th, table.threshold-tbl td { border: 1px solid var(--border); padding: 12px 20px; font-size: .88rem; }
+  table.threshold-tbl thead th { background: var(--surface2); font-weight: 700; text-align: center; }
+  table.threshold-tbl td { text-align: center; }
+  table.threshold-tbl td:first-child { text-align: left; color: var(--text); font-weight: 600; }
+  table.threshold-tbl td:last-child { color: var(--accent2); font-weight: 700; font-size: .95rem; }
+  .auto-approve-note { background: rgba(163,230,53,.08); border: 1px solid rgba(163,230,53,.25); border-radius: 10px; padding: 12px 16px; font-size: .82rem; color: #a3e635; margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+
+  /* ── ESCALATION BYPASS ── */
+  .escalation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+  .escalation-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid; border-radius: 12px; padding: 16px 18px; }
+  .escalation-card h5 { font-size: .88rem; font-weight: 700; margin-bottom: 6px; }
+  .escalation-card p { font-size: .8rem; color: var(--muted); line-height: 1.55; }
+  .example-box { background: var(--surface2); border: 1px dashed var(--border); border-radius: 10px; padding: 14px 18px; margin-top: 14px; font-size: .83rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .ex-level { padding: 5px 14px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+
+  /* ── EDIT CONTROLS ── */
+  .edit-status-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .edit-badge { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-size: .84rem; font-weight: 600; }
+  .edit-allowed { background: rgba(163,230,53,.1); border: 1px solid rgba(163,230,53,.3); color: #a3e635; }
+  .edit-blocked { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.25); color: #ff6b6b; }
+  .edit-rule-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 14px; }
+  .edit-rule-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .edit-rule-card h5 { font-size: .87rem; font-weight: 700; margin-bottom: 5px; }
+  .edit-rule-card p { font-size: .79rem; color: var(--muted); line-height: 1.55; }
+
+  /* ── SECURITY ROLES ── */
+  .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .role-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+  .role-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .role-card-hdr { padding: 16px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--border); }
+  .role-card-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .role-card-hdr h4 { font-size: .97rem; font-weight: 700; margin-bottom: 2px; }
+  .role-card-hdr .role-type { font-size: .71rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .role-card-body { padding: 14px 20px 18px; font-size: .82rem; color: var(--muted); line-height: 1.6; }
+  .role-perms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .perm { font-size: .71rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+  .perm-can { background: rgba(163,230,53,.14); color: #a3e635; }
+  .perm-no  { background: rgba(255,107,107,.12); color: #ff6b6b; }
+
+  /* ── PRIVILEGE MATRIX ── */
+  .priv-wrap { overflow-x: auto; }
+  table.priv-matrix { border-collapse: collapse; width: 100%; min-width: 720px; }
+  table.priv-matrix th, table.priv-matrix td { border: 1px solid var(--border); padding: 10px 12px; font-size: .79rem; }
+  table.priv-matrix thead th { background: var(--surface2); font-weight: 700; text-align: center; white-space: nowrap; }
+  table.priv-matrix thead th:first-child { text-align: left; }
+  table.priv-matrix tbody td:first-child { font-weight: 600; color: var(--text); font-size: .82rem; }
+  table.priv-matrix tbody td { text-align: center; color: var(--muted); }
+  table.priv-matrix tbody tr:hover td { background: var(--surface2); }
+  .priv-full    { color: #a3e635; font-weight: 700; }
+  .priv-limited { color: #ffa94d; }
+  .priv-read    { color: #74c0fc; }
+  .priv-write   { color: #d8b4fe; }
+  .priv-meta    { color: #9ca3af; font-size: .74rem; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="7" fill="url(#lg)"/>
+      <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="28" y2="28"><stop stop-color="#6c63ff"/><stop offset="1" stop-color="#00d4aa"/></linearGradient></defs>
+    </svg>
+    Purchase Request App
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="erd">ERD Diagram</button>
+    <button class="tab-btn" data-tab="cards">Table Cards</button>
+    <button class="tab-btn" data-tab="matrix">Relationship Matrix</button>
+    <button class="tab-btn" data-tab="flow">Approval Flow</button>
+    <button class="tab-btn" data-tab="types">Data Types</button>
+    <button class="tab-btn" data-tab="arch">Architecture</button>
+    <button class="tab-btn" data-tab="security">Security Roles</button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Purchase Request — Data Schema</h1>
+  <p>Interactive overview of all tables, columns, relationships, architecture, approval logic, and security roles in the Dataverse model.</p>
+  <div class="stats-row">
+    <div class="stat-card c1"><div class="val">5</div><div class="lbl">Tables</div></div>
+    <div class="stat-card c2"><div class="val">44</div><div class="lbl">Total Columns</div></div>
+    <div class="stat-card c3"><div class="val">8</div><div class="lbl">Lookup Relations</div></div>
+    <div class="stat-card c4"><div class="val">4</div><div class="lbl">One-to-Many</div></div>
+    <div class="stat-card c5"><div class="val">3</div><div class="lbl">Child Tables</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════ TAB 1: ERD ════════════════════ -->
+<div id="tab-erd" class="section active">
+  <div class="section-title">Entity Relationship Diagram</div>
+  <div class="section-sub">Drag to pan · Scroll to zoom · Click a table to inspect its columns</div>
+  <div id="erd-wrap" style="height:580px;">
+    <svg id="erd-canvas" height="560"></svg>
+    <div class="erd-controls">
+      <button class="erd-btn" id="zoom-in">＋ Zoom</button>
+      <button class="erd-btn" id="zoom-out">− Zoom</button>
+      <button class="erd-btn" id="zoom-fit">⤢ Fit</button>
+    </div>
+  </div>
+  <div class="erd-legend">
+    <div class="erd-legend-item"><div class="erd-legend-dot" style="background:#6c63ff"></div> Primary Table</div>
+    <div class="erd-legend-item"><div class="erd-legend-dot" style="background:#00d4aa"></div> Child / Detail Table</div>
+    <div class="erd-legend-item"><div class="erd-legend-dot" style="background:#ffa94d"></div> Reference / Config Table</div>
+    <div class="erd-legend-item"><span style="display:inline-block;width:28px;height:2px;background:#6c63ff;border-radius:1px"></span> 1 : Many</div>
+    <div class="erd-legend-item"><span style="display:inline-block;width:28px;height:2px;background:#00d4aa;border-radius:1px;border-style:dashed"></span> Lookup Reference</div>
+  </div>
+</div>
+
+<!-- ════════════════════ TAB 2: TABLE CARDS ════════════════════ -->
+<div id="tab-cards" class="section">
+  <div class="section-title">Table Schema Cards</div>
+  <div class="section-sub">All columns, data types, and key badges for every table · Scroll inside a card to see all columns</div>
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
+
+<!-- ════════════════════ TAB 3: MATRIX ════════════════════ -->
+<div id="tab-matrix" class="section">
+  <div class="section-title">Relationship Matrix</div>
+  <div class="section-sub">Shows how every table relates to every other table</div>
+  <div class="matrix-wrap" id="matrix-wrap"></div>
+  <br/>
+  <div class="section-title" style="font-size:1rem; margin-top:12px;">Foreign Key Index</div>
+  <div id="fk-list" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px;"></div>
+</div>
+
+<!-- ════════════════════ TAB 4: FLOW ════════════════════ -->
+<div id="tab-flow" class="section">
+  <div class="section-title">Approval Workflow</div>
+  <div class="section-sub">How a Purchase Request moves through creation, detail entry, approvals, and attachments</div>
+
+  <div class="workflow-steps" id="workflow-steps"></div>
+
+  <br/><br/>
+  <div class="section-title" style="font-size:1rem;">Approval Level Logic</div>
+  <div style="margin-top:14px; display:grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap:16px;" id="approval-logic"></div>
+
+  <br/>
+  <div class="section-title" style="font-size:1rem; margin-top:8px;">Status & Flag Lifecycle</div>
+  <div id="flow-wrap" style="margin-top:14px;">
+    <svg id="flow-svg" width="760" height="120"></svg>
+  </div>
+
+  <br/><br/>
+  <div class="section-title" style="font-size:1rem;">Approval Level Thresholds</div>
+  <div class="section-sub">Maximum approval authority per level — configured in the Approvers List table</div>
+  <div class="threshold-wrap">
+    <div>
+      <table class="threshold-tbl">
+        <thead><tr><th>Approval Level</th><th>Maximum Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Level 1</td><td>$5,000</td></tr>
+          <tr><td>Level 2</td><td>$15,000</td></tr>
+          <tr><td>Level 3</td><td>$30,000</td></tr>
+          <tr><td>Level 4</td><td>$100,000</td></tr>
+        </tbody>
+      </table>
+      <div class="auto-approve-note">✅ Requests under <strong style="margin:0 4px">$1</strong> are automatically approved — no approval records generated.</div>
+    </div>
+  </div>
+
+  <br/><br/>
+  <div class="section-title" style="font-size:1rem;">Approval Escalation &amp; Bypass Rules</div>
+  <div class="section-sub">Higher-level approvers may bypass lower levels, reducing cycle time while maintaining a full audit trail</div>
+  <div class="escalation-grid" id="escalation-grid"></div>
+  <div class="example-box">
+    <span style="color:var(--muted);font-size:.82rem;font-weight:600">Example — $25,000 request:</span>
+    <span class="ex-level" style="background:rgba(255,107,107,.15);color:#ff6b6b">Level 1 — Skipped</span>
+    <span class="ex-level" style="background:rgba(255,107,107,.15);color:#ff6b6b">Level 2 — Skipped</span>
+    <span class="ex-level" style="background:rgba(163,230,53,.15);color:#a3e635">Level 3 — Pending ✓</span>
+    <span style="color:var(--muted);font-size:.78rem;margin-left:4px">Records still created for skipped levels (audit trail preserved)</span>
+  </div>
+
+  <br/><br/>
+  <div class="section-title" style="font-size:1rem;">Edit Controls &amp; Governance</div>
+  <div class="section-sub">Editing rights are governed by request status — approved data stays immutable during active approvals</div>
+  <div style="margin-top:14px">
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px;font-weight:600">Editing allowed when status is:</div>
+    <div class="edit-status-row">
+      <div class="edit-badge edit-allowed">✏️ New</div>
+      <div class="edit-badge edit-allowed">✏️ Rejected</div>
+    </div>
+    <div style="font-size:.82rem;color:var(--muted);margin-top:16px;margin-bottom:10px;font-weight:600">Editing blocked when status is:</div>
+    <div class="edit-status-row">
+      <div class="edit-badge edit-blocked">🔒 Submitted</div>
+      <div class="edit-badge edit-blocked">🔒 Pending Approval</div>
+      <div class="edit-badge edit-blocked">🔒 Approved</div>
+      <div class="edit-badge edit-blocked">🔒 Processed</div>
+      <div class="edit-badge edit-blocked">🔒 Closed</div>
+    </div>
+  </div>
+  <div class="edit-rule-cards" id="edit-rule-cards" style="margin-top:20px;"></div>
+
+</div>
+
+<!-- ════════════════════ TAB 5: DATA TYPES ════════════════════ -->
+<div id="tab-types" class="section">
+  <div class="section-title">Data Type Distribution</div>
+  <div class="section-sub">Breakdown of all 44 column data types across the entire schema</div>
+  <div class="dtype-grid" id="dtype-grid"></div>
+  <br/>
+  <div class="section-title" style="font-size:1rem; margin-top:8px;">Column Type Chart</div>
+  <div style="margin-top:16px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px;">
+    <canvas id="dtype-chart" height="200"></canvas>
+  </div>
+</div>
+
+
+<!-- ════════════════════ TAB 6: ARCHITECTURE ════════════════════ -->
+<div id="tab-arch" class="section">
+  <div class="section-title">Solution Architecture</div>
+  <div class="section-sub">How Power Platform layers work together to deliver the purchase request system</div>
+
+  <div class="arch-intro">
+    <strong>Overview:</strong> The solution centralises procurement governance and replaces email-based approval processes with a structured, auditable workflow. Users create purchase requests, add line items and supporting attachments, and submit requests into a governed approval process. <strong>Dataverse</strong> serves as the transactional data platform. <strong>Power Automate</strong> evaluates approval requirements based on department, site, spending thresholds, and approval levels. <strong>Power BI</strong> provides reporting on cycle times, spending trends, and governance metrics. The architecture supports configurable thresholds, automatic routing, escalations, audit tracking, and reporting.
+  </div>
+
+  <div class="section-title" style="font-size:1rem; margin-bottom:14px;">Platform Layers</div>
+  <div class="arch-grid" id="arch-tiles"></div>
+
+  <div class="section-title" style="font-size:1rem; margin-bottom:14px;">System Pillars</div>
+  <div class="overview-grid" id="arch-overview"></div>
+</div>
+
+<!-- ════════════════════ TAB 7: SECURITY ROLES ════════════════════ -->
+<div id="tab-security" class="section">
+  <div class="section-title">Security Role Design</div>
+  <div class="section-sub">Role-based access controls — each user type only accesses data required for their responsibilities</div>
+  <div class="role-grid" id="role-grid"></div>
+
+  <div class="section-title" style="font-size:1rem; margin-top:8px;">Dataverse Privileges by Table</div>
+  <div class="section-sub">Table-level Dataverse privilege configuration for each security role</div>
+  <div class="priv-wrap" id="priv-wrap"></div>
+</div>
+
+<div id="tooltip"></div>
+<div id="detail-panel">
+  <button class="close-btn" id="panel-close">✕</button>
+  <h3 id="panel-title"></h3>
+  <p id="panel-sub" style="font-size:.78rem;color:var(--muted);margin-bottom:16px;"></p>
+  <div id="panel-fields"></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   DATA MODEL
+═══════════════════════════════════════════════════════ */
+const TABLES = [
+  {
+    id: 'purchase_requests',
+    name: 'Purchase Requests',
+    shortName: 'PR',
+    color: '#6c63ff',
+    type: 'primary',
+    desc: 'Core table — one record per purchase request',
+    columns: [
+      { name: 'PO#',                    field: 'pn_PO',                    type: 'text',     pk: true },
+      { name: 'Purchase Requests (ID)', field: 'pn_PurchaseRequests',      type: 'guid',     pk: false },
+      { name: 'Approved By',            field: 'pn_ApprovedBy',            type: 'lookup',   fk: 'approvers_list' },
+      { name: 'Current Level',          field: 'pn_CurrentLevel',          type: 'number' },
+      { name: 'Date Required',          field: 'pn_DateRequired',          type: 'date' },
+      { name: 'Department',             field: 'pn_Department',            type: 'choice' },
+      { name: 'Due Date',               field: 'cr38e_DueDate',            type: 'date' },
+      { name: 'Flag Approved',          field: 'cr38e_flagapproved',       type: 'bool' },
+      { name: 'Flag Processed',         field: 'cr38e_flagprocessedsubmission', type: 'bool' },
+      { name: 'PO Number',              field: 'cr38e_PONumber',           type: 'text' },
+      { name: 'Priority',               field: 'cr38e_Priority',           type: 'choice' },
+      { name: 'Purchase Status',        field: 'pn_PurchaseStatus',        type: 'choice' },
+      { name: 'Purchasing Notes',       field: 'pn_PurchasingNotes',       type: 'richtext' },
+      { name: 'Site',                   field: 'pn_Site',                  type: 'choice' },
+      { name: 'Total Costs',            field: 'pn_TotalCosts',            type: 'number' },
+    ]
+  },
+  {
+    id: 'pr_details',
+    name: 'Purchase Request Details',
+    shortName: 'PRD',
+    color: '#00d4aa',
+    type: 'child',
+    desc: 'Line items — one per product/service requested',
+    columns: [
+      { name: 'Part Number',            field: 'pn_PartNumber',            type: 'text',     pk: true },
+      { name: 'PR Details (ID)',        field: 'pn_PurchaseRequestDetails',type: 'guid' },
+      { name: 'Purchase Request',       field: 'pn_PurchaseRequest',       type: 'lookup',   fk: 'purchase_requests' },
+      { name: 'Description',            field: 'pn_Description',           type: 'richtext' },
+      { name: 'Link',                   field: 'pn_Link',                  type: 'url' },
+      { name: 'Price Each',             field: 'pn_PriceEach',             type: 'currency' },
+      { name: 'Price Each (Base)',      field: 'pn_priceeach_Base',        type: 'currency' },
+      { name: 'Quantity',               field: 'pn_Quantity',              type: 'number' },
+      { name: 'Total Price',            field: 'pn_TotalPrice',            type: 'currency' },
+      { name: 'Total Price (Base)',     field: 'pn_totalprice_Base',       type: 'currency' },
+      { name: 'Vendor',                 field: 'pn_Vendor',                type: 'text' },
+    ]
+  },
+  {
+    id: 'pr_approval',
+    name: 'PR Approval Tables',
+    shortName: 'PRAT',
+    color: '#ffa94d',
+    type: 'child',
+    desc: 'Approval records per level per request',
+    columns: [
+      { name: 'Name',                   field: 'pn_Name',                  type: 'text',     pk: true },
+      { name: 'PR Approval (ID)',       field: 'pn_PurchaseRequestApprovalTables', type: 'guid' },
+      { name: 'Purchase Request',       field: 'pn_PurchaseRequest',       type: 'lookup',   fk: 'purchase_requests' },
+      { name: 'Approver',               field: 'pn_Approver',              type: 'lookup',   fk: 'approvers_list' },
+      { name: 'Approved By',            field: 'pn_ApprovedBy',            type: 'lookup',   fk: 'approvers_list' },
+      { name: 'Approval Comment',       field: 'pn_ApprovalComment',       type: 'richtext' },
+      { name: 'Approval Date',          field: 'pn_ApprovalDate',          type: 'date' },
+      { name: 'Approval Status',        field: 'pn_ApprovalStatus',        type: 'choice' },
+      { name: 'Level',                  field: 'pn_Level',                 type: 'number' },
+    ]
+  },
+  {
+    id: 'pr_attachments',
+    name: 'PR Attachments',
+    shortName: 'PRA',
+    color: '#74c0fc',
+    type: 'child',
+    desc: 'File attachments linked to a purchase request',
+    columns: [
+      { name: 'File Name',              field: 'pn_FileName',              type: 'text',     pk: true },
+      { name: 'PR Attachments (ID)',    field: 'pn_PurchaseRequestAttachmentsF', type: 'guid' },
+      { name: 'Purchase Request',       field: 'pn_PurchaseRequest',       type: 'lookup',   fk: 'purchase_requests' },
+      { name: 'Description',            field: 'pn_Description',           type: 'text' },
+      { name: 'File',                   field: 'pn_File',                  type: 'file' },
+      { name: 'File Size',              field: 'pn_FileSize',              type: 'text' },
+      { name: 'File Type',              field: 'pn_FileType',              type: 'choice' },
+      { name: 'Image',                  field: 'pn_Image',                 type: 'image',    img: true },
+    ]
+  },
+  {
+    id: 'approvers_list',
+    name: 'Approvers List',
+    shortName: 'AL',
+    color: '#ff6b6b',
+    type: 'reference',
+    desc: 'Configured approvers with level and amount thresholds',
+    columns: [
+      { name: 'Full Name',              field: 'pn_FullName',              type: 'text',     pk: true },
+      { name: 'Approvers List (ID)',    field: 'pn_ApproversList',         type: 'guid' },
+      { name: 'Approver',               field: 'pn_Approver',              type: 'lookup' },
+      { name: 'Department',             field: 'pn_Department',            type: 'choice' },
+      { name: 'Is Active',              field: 'pn_isactive',              type: 'bool' },
+      { name: 'Level',                  field: 'pn_Level',                 type: 'number' },
+      { name: 'Max Amount',             field: 'pn_MaxAmount',             type: 'currency' },
+      { name: 'Max Amount (Base)',      field: 'pn_maxamount_Base',        type: 'currency' },
+      { name: 'Min Amount',             field: 'pn_MinAmount',             type: 'currency' },
+      { name: 'Min Amount (Base)',      field: 'pn_minamount_Base',        type: 'currency' },
+    ]
+  }
+];
+
+const RELATIONS = [
+  { from: 'purchase_requests', to: 'pr_details',    type: '1:M', via: 'pn_PurchaseRequest',  label: '1 Request → Many Items' },
+  { from: 'purchase_requests', to: 'pr_approval',   type: '1:M', via: 'pn_PurchaseRequest',  label: '1 Request → Many Approvals' },
+  { from: 'purchase_requests', to: 'pr_attachments',type: '1:M', via: 'pn_PurchaseRequest',  label: '1 Request → Many Attachments' },
+  { from: 'approvers_list',    to: 'pr_approval',   type: '1:M', via: 'pn_Approver',         label: '1 Approver → Many Approval Records' },
+  { from: 'approvers_list',    to: 'purchase_requests', type: 'REF', via: 'pn_ApprovedBy',  label: 'Approver reference (who approved)' },
+  { from: 'approvers_list',    to: 'pr_approval',   type: 'REF', via: 'pn_ApprovedBy',      label: 'Approver reference in approval record' },
+];
+
+/* ═══════════════ DTYPE HELPERS ═══════════════ */
+const DTYPE_META = {
+  lookup:   { label: 'Lookup',          cls: 'dt-lookup',   color: '#00d4aa' },
+  text:     { label: 'Text',            cls: 'dt-text',     color: '#74c0fc' },
+  number:   { label: 'Whole number',    cls: 'dt-number',   color: '#ffa94d' },
+  choice:   { label: 'Choice',          cls: 'dt-choice',   color: '#6c63ff' },
+  currency: { label: 'Currency',        cls: 'dt-currency', color: '#ff6b6b' },
+  bool:     { label: 'Yes/No',          cls: 'dt-bool',     color: '#a3e635' },
+  date:     { label: 'Date & Time',     cls: 'dt-date',     color: '#d8b4fe' },
+  richtext: { label: 'Rich/Multi Text', cls: 'dt-richtext', color: '#fcd34d' },
+  file:     { label: 'File',            cls: 'dt-file',     color: '#67e8f9' },
+  image:    { label: 'Image',           cls: 'dt-image',    color: '#fca5a5' },
+  url:      { label: 'URL',             cls: 'dt-url',      color: '#93c5fd' },
+  guid:     { label: 'Unique ID',       cls: 'dt-guid',     color: '#9ca3af' },
+};
+
+/* ═══════════════ TAB SWITCHING ═══════════════ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════
+   TAB 1: ERD DIAGRAM
+═══════════════════════════════════════════════════════ */
+(function buildERD() {
+  const svg = document.getElementById('erd-canvas');
+  const wrap = document.getElementById('erd-wrap');
+  const W = wrap.clientWidth || 900;
+  const H = 560;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // Table node positions
+  const POS = {
+    purchase_requests: { x: W/2 - 130, y: 60 },
+    pr_details:        { x: W/2 - 370, y: 320 },
+    pr_approval:       { x: W/2 - 110, y: 320 },
+    pr_attachments:    { x: W/2 + 160, y: 320 },
+    approvers_list:    { x: W/2 + 200, y: 60  },
+  };
+
+  const NODE_W = 220, NODE_H = 44;
+  let scale = 1, panX = 0, panY = 0, dragging = false, lastMouse = null;
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  svg.appendChild(g);
+
+  function setTransform() { g.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
+
+  // defs
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  ['arrow-main','arrow-ref'].forEach((id, i) => {
+    const m = document.createElementNS('http://www.w3.org/2000/svg','marker');
+    m.setAttribute('id', id); m.setAttribute('markerWidth','8'); m.setAttribute('markerHeight','8');
+    m.setAttribute('refX','7'); m.setAttribute('refY','3'); m.setAttribute('orient','auto');
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d','M0,0 L0,6 L8,3 z');
+    p.setAttribute('fill', i===0 ? '#6c63ff' : '#00d4aa');
+    m.appendChild(p); defs.appendChild(m);
+  });
+  svg.insertBefore(defs, g);
+
+  // Background grid
+  const grid = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  grid.setAttribute('width',W); grid.setAttribute('height',H);
+  grid.setAttribute('fill','url(#gridPat)');
+  const pat = document.createElementNS('http://www.w3.org/2000/svg','pattern');
+  pat.setAttribute('id','gridPat'); pat.setAttribute('width','32'); pat.setAttribute('height','32');
+  pat.setAttribute('patternUnits','userSpaceOnUse');
+  const gline1 = document.createElementNS('http://www.w3.org/2000/svg','path');
+  gline1.setAttribute('d','M 32 0 L 0 0 0 32'); gline1.setAttribute('fill','none');
+  gline1.setAttribute('stroke','#1e2235'); gline1.setAttribute('stroke-width','0.5');
+  pat.appendChild(gline1); defs.appendChild(pat); svg.insertBefore(grid, g);
+
+  // Draw edges
+  RELATIONS.forEach(rel => {
+    const from = POS[rel.from], to = POS[rel.to];
+    const x1 = from.x + NODE_W/2, y1 = from.y + NODE_H/2;
+    const x2 = to.x + NODE_W/2, y2 = to.y + NODE_H/2;
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    const curve = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+    line.setAttribute('d', curve);
+    line.setAttribute('fill','none');
+    const isMain = rel.type === '1:M';
+    line.setAttribute('stroke', isMain ? '#6c63ff' : '#00d4aa');
+    line.setAttribute('stroke-width', isMain ? '2' : '1.5');
+    line.setAttribute('stroke-dasharray', isMain ? '' : '6,4');
+    line.setAttribute('marker-end', `url(#${isMain ? 'arrow-main':'arrow-ref'})`);
+    line.setAttribute('opacity','0.7');
+    g.appendChild(line);
+
+    // Label
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', mx); txt.setAttribute('y', my - 6);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.setAttribute('fill', isMain ? '#6c63ff' : '#00d4aa');
+    txt.textContent = rel.type === '1:M' ? '1:M' : 'REF';
+    g.appendChild(txt);
+  });
+
+  // Draw table nodes
+  TABLES.forEach(tbl => {
+    const pos = POS[tbl.id];
+    const tg = document.createElementNS('http://www.w3.org/2000/svg','g');
+    tg.setAttribute('cursor','pointer');
+
+    // Shadow
+    const shadow = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    shadow.setAttribute('x', pos.x+4); shadow.setAttribute('y', pos.y+4);
+    shadow.setAttribute('width', NODE_W); shadow.setAttribute('height', NODE_H+tbl.columns.length*22+12);
+    shadow.setAttribute('rx','12'); shadow.setAttribute('fill','rgba(0,0,0,0.4)');
+    tg.appendChild(shadow);
+
+    // Card body
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', pos.x); rect.setAttribute('y', pos.y);
+    rect.setAttribute('width', NODE_W); rect.setAttribute('height', NODE_H+tbl.columns.length*22+12);
+    rect.setAttribute('rx','12');
+    rect.setAttribute('fill','#1a1d27'); rect.setAttribute('stroke', tbl.color); rect.setAttribute('stroke-width','1.5');
+    tg.appendChild(rect);
+
+    // Header
+    const hdr = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    hdr.setAttribute('x', pos.x); hdr.setAttribute('y', pos.y);
+    hdr.setAttribute('width', NODE_W); hdr.setAttribute('height', NODE_H);
+    hdr.setAttribute('rx','12'); hdr.setAttribute('fill', tbl.color + '33');
+    tg.appendChild(hdr);
+    const hdr2 = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    hdr2.setAttribute('x', pos.x); hdr2.setAttribute('y', pos.y+NODE_H-12);
+    hdr2.setAttribute('width', NODE_W); hdr2.setAttribute('height', '14');
+    hdr2.setAttribute('fill', tbl.color + '33');
+    tg.appendChild(hdr2);
+
+    // Table name
+    const title = document.createElementNS('http://www.w3.org/2000/svg','text');
+    title.setAttribute('x', pos.x+14); title.setAttribute('y', pos.y+17);
+    title.setAttribute('font-size','12'); title.setAttribute('font-weight','bold');
+    title.setAttribute('fill', tbl.color);
+    title.textContent = '⬛ ' + tbl.name;
+    tg.appendChild(title);
+
+    const sub = document.createElementNS('http://www.w3.org/2000/svg','text');
+    sub.setAttribute('x', pos.x+14); sub.setAttribute('y', pos.y+31);
+    sub.setAttribute('font-size','9'); sub.setAttribute('fill','#8890b5');
+    sub.textContent = tbl.columns.length + ' columns · ' + (tbl.type === 'primary' ? 'PRIMARY' : tbl.type.toUpperCase());
+    tg.appendChild(sub);
+
+    // Columns
+    tbl.columns.slice(0,8).forEach((col, i) => {
+      const cy = pos.y + NODE_H + 8 + i*22;
+      const crow = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      crow.setAttribute('x', pos.x+2); crow.setAttribute('y', cy);
+      crow.setAttribute('width', NODE_W-4); crow.setAttribute('height', '20');
+      crow.setAttribute('rx','4'); crow.setAttribute('fill', 'transparent');
+      tg.appendChild(crow);
+
+      const ctxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      ctxt.setAttribute('x', pos.x+12); ctxt.setAttribute('y', cy+13);
+      ctxt.setAttribute('font-size','9.5'); ctxt.setAttribute('fill', col.pk ? '#fff' : col.fk ? '#00d4aa' : '#8890b5');
+      ctxt.textContent = (col.pk ? '🔑 ' : col.fk ? '🔗 ' : '  ') + col.name;
+      tg.appendChild(ctxt);
+
+      const dm = DTYPE_META[col.type];
+      const dtxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      dtxt.setAttribute('x', pos.x+NODE_W-8); dtxt.setAttribute('y', cy+13);
+      dtxt.setAttribute('text-anchor','end'); dtxt.setAttribute('font-size','8.5');
+      dtxt.setAttribute('fill', dm ? dm.color : '#6b7280');
+      dtxt.textContent = dm ? dm.label : col.type;
+      tg.appendChild(dtxt);
+    });
+
+    if(tbl.columns.length > 8) {
+      const more = document.createElementNS('http://www.w3.org/2000/svg','text');
+      more.setAttribute('x', pos.x+NODE_W/2); more.setAttribute('y', pos.y+NODE_H+8+8*22+10);
+      more.setAttribute('text-anchor','middle'); more.setAttribute('font-size','9'); more.setAttribute('fill','#6b7280');
+      more.textContent = `+${tbl.columns.length-8} more…`;
+      tg.appendChild(more);
+    }
+
+    // Click handler
+    tg.addEventListener('click', () => openPanel(tbl));
+    tg.addEventListener('mouseenter', () => { rect.setAttribute('stroke-width','3'); });
+    tg.addEventListener('mouseleave', () => { rect.setAttribute('stroke-width','1.5'); });
+    g.appendChild(tg);
+  });
+
+  // Pan & Zoom
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(2.5, Math.max(0.4, scale * delta));
+    setTransform();
+  });
+  svg.addEventListener('mousedown', e => { dragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    panX += e.clientX - lastMouse.x; panY += e.clientY - lastMouse.y;
+    lastMouse = { x: e.clientX, y: e.clientY }; setTransform();
+  });
+
+  document.getElementById('zoom-in').addEventListener('click',  () => { scale = Math.min(2.5, scale*1.2); setTransform(); });
+  document.getElementById('zoom-out').addEventListener('click', () => { scale = Math.max(0.4, scale*0.83); setTransform(); });
+  document.getElementById('zoom-fit').addEventListener('click',  () => { scale = 1; panX = 0; panY = 0; setTransform(); });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 2: TABLE CARDS
+═══════════════════════════════════════════════════════ */
+(function buildCards() {
+  const grid = document.getElementById('cards-grid');
+  const icons = { primary:'🗂️', child:'📋', reference:'👤' };
+  TABLES.forEach(tbl => {
+    const card = document.createElement('div');
+    card.className = 'tbl-card';
+    card.innerHTML = `
+      <div class="tbl-card-header" style="border-top:3px solid ${tbl.color}">
+        <div class="tbl-icon" style="background:${tbl.color}22">${icons[tbl.type]}</div>
+        <div>
+          <h3>${tbl.name}</h3>
+          <span>${tbl.columns.length} columns · ${tbl.type.toUpperCase()}</span>
+        </div>
+      </div>
+      <ul class="col-list">
+        ${tbl.columns.map(col => {
+          const dm = DTYPE_META[col.type] || { label: col.type, cls:'dt-text', color:'#888' };
+          const badges = (col.pk ? '<span class="pk-badge">PK</span>' : '') +
+                         (col.fk ? '<span class="fk-badge">FK</span>' : '') +
+                         (col.img ? '<span class="img-badge">IMG</span>' : '');
+          return `<li class="col-row">
+            <span class="col-name">${badges}${col.name}<br><small style="color:var(--muted);font-size:.7rem">${col.field}</small></span>
+            <span class="dtype-badge ${dm.cls}">${dm.label}</span>
+          </li>`;
+        }).join('')}
+      </ul>`;
+    card.querySelector('.tbl-card-header').addEventListener('click', () => openPanel(tbl));
+    grid.appendChild(card);
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 3: RELATIONSHIP MATRIX
+═══════════════════════════════════════════════════════ */
+(function buildMatrix() {
+  const wrap = document.getElementById('matrix-wrap');
+  const names = TABLES.map(t => t.name);
+
+  let html = '<table class="matrix"><thead><tr><th class="row-head">From \\ To</th>';
+  names.forEach(n => { html += `<th>${n.replace('Purchase Request','PR')}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  TABLES.forEach(from => {
+    html += `<tr><th class="row-head" style="color:${from.color}">${from.name}</th>`;
+    TABLES.forEach(to => {
+      if(from.id === to.id) { html += '<td><span class="rel-self">—</span></td>'; return; }
+      const rels = RELATIONS.filter(r => r.from === from.id && r.to === to.id);
+      const revRels = RELATIONS.filter(r => r.from === to.id && r.to === from.id);
+      if(rels.length) {
+        const types = [...new Set(rels.map(r=>r.type))];
+        html += `<td>${types.map(t=>`<span class="rel-cell rel-1m" title="${rels.map(r=>r.via).join(', ')}">${t}</span>`).join('')}</td>`;
+      } else if(revRels.length) {
+        html += `<td><span class="rel-cell rel-m1">←${revRels[0].type}</span></td>`;
+      } else {
+        html += '<td><span class="rel-none">·</span></td>';
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  // FK list
+  const fkList = document.getElementById('fk-list');
+  RELATIONS.forEach(rel => {
+    const from = TABLES.find(t=>t.id===rel.from), to = TABLES.find(t=>t.id===rel.to);
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:.82rem;';
+    div.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="color:${from.color};font-weight:700">${from.name}</span>
+      <span style="color:var(--muted)">→</span>
+      <span style="color:${to.color};font-weight:700">${to.name}</span>
+      <span style="margin-left:auto;background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:.75rem;color:var(--muted)">${rel.type}</span>
+    </div>
+    <div style="color:var(--muted)">via <code style="color:var(--accent2)">${rel.via}</code></div>
+    <div style="color:var(--muted);font-size:.75rem;margin-top:2px">${rel.label}</div>`;
+    fkList.appendChild(div);
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 4: WORKFLOW
+═══════════════════════════════════════════════════════ */
+(function buildFlow() {
+  const steps = [
+    { num:'1', title:'Request Created',  desc:'User fills PO#, Department, Priority, Site, Date Required, Notes', color:'#6c63ff' },
+    { num:'2', title:'Items Added',       desc:'Line items entered in PR Details (Part#, Qty, Price, Vendor)', color:'#00d4aa' },
+    { num:'3', title:'Files Attached',    desc:'Supporting files uploaded to PR Attachments table', color:'#74c0fc' },
+    { num:'4', title:'Submitted',         desc:'flagprocessedsubmission = TRUE, Current Level set to 1', color:'#ffa94d' },
+    { num:'5', title:'Level 1 Review',    desc:'Approvers List queried for Level 1 — record created in PR Approval Tables', color:'#ff6b6b' },
+    { num:'6', title:'Approved / Rejected',desc:'Approval Status set, Approval Date logged, Comment added', color:'#d8b4fe' },
+    { num:'7', title:'Next Level',        desc:'If approved, Current Level incremented and next approver notified', color:'#fcd34d' },
+    { num:'8', title:'Fully Approved',    desc:'flagapproved = TRUE, PO Number assigned, Purchase Status = Approved', color:'#a3e635' },
+  ];
+
+  const cont = document.getElementById('workflow-steps');
+  steps.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'wf-step';
+    div.style.borderColor = s.color;
+    div.innerHTML = `<div class="step-num" style="background:${s.color}33;color:${s.color}">${s.num}</div>
+      <h4>${s.title}</h4><p>${s.desc}</p>`;
+    cont.appendChild(div);
+    if(i < steps.length-1) {
+      const arr = document.createElement('div');
+      arr.className = 'wf-arrow';
+      arr.textContent = '›';
+      cont.appendChild(arr);
+    }
+  });
+
+  // Approval logic cards
+  const alCards = [
+    { title:'Amount-based Routing', desc:'Each approver in the Approvers List has Min Amount & Max Amount. The system matches the request\'s Total Costs to the correct level.', color:'#ffa94d' },
+    { title:'Level Progression',    desc:'Current Level on the Purchase Request tracks where in the chain the request is. It increments as each level approves.', color:'#6c63ff' },
+    { title:'Department Matching',  desc:'Approvers are assigned per Department (Choice). Requests are routed to approvers in the matching department.', color:'#00d4aa' },
+    { title:'Final Approval Flag',  desc:'Once all required levels approve, flagapproved is set to TRUE and the PO Number is generated.', color:'#a3e635' },
+  ];
+  const alCont = document.getElementById('approval-logic');
+  alCards.forEach(c => {
+    const div = document.createElement('div');
+    div.style.cssText = `background:var(--surface);border:1px solid ${c.color}55;border-left:4px solid ${c.color};border-radius:12px;padding:18px;`;
+    div.innerHTML = `<div style="font-weight:700;color:${c.color};margin-bottom:6px">${c.title}</div>
+      <div style="font-size:.83rem;color:var(--muted);line-height:1.6">${c.desc}</div>`;
+    alCont.appendChild(div);
+  });
+
+  // Status lifecycle SVG
+  const svg = document.getElementById('flow-svg');
+  const statuses = ['Draft','Submitted','In Review','Level 2+','Approved','Rejected'];
+  const colors =   ['#8890b5','#ffa94d','#6c63ff','#74c0fc','#a3e635','#ff6b6b'];
+  const W = 760, H = 120, step = W / (statuses.length + 0.5);
+
+  statuses.forEach((s, i) => {
+    const cx = step * (i + 0.75), cy = 60;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r','22');
+    circle.setAttribute('fill', colors[i] + '33'); circle.setAttribute('stroke', colors[i]); circle.setAttribute('stroke-width','2');
+    svg.appendChild(circle);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', cx); txt.setAttribute('y', cy+4);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','9'); txt.setAttribute('fill', colors[i]); txt.setAttribute('font-weight','700');
+    txt.textContent = s;
+    svg.appendChild(txt);
+    if(i < statuses.length - 2) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', cx+22); line.setAttribute('y1', cy);
+      line.setAttribute('x2', cx+step-22); line.setAttribute('y2', cy);
+      line.setAttribute('stroke', '#2e3250'); line.setAttribute('stroke-width','2');
+      line.setAttribute('stroke-dasharray','4,3'); line.setAttribute('marker-end','url(#arrow-main)');
+      svg.appendChild(line);
+    }
+    if(i === statuses.length - 1) {
+      // Rejected loop back
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',`M${cx},${cy-22} Q${cx},20 ${step*0.75},20 Q${step*0.75},38 ${step*0.75},38`);
+      path.setAttribute('fill','none'); path.setAttribute('stroke','#ff6b6b44'); path.setAttribute('stroke-width','1.5');
+      path.setAttribute('stroke-dasharray','4,3');
+      svg.appendChild(path);
+    }
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 5: DATA TYPES
+═══════════════════════════════════════════════════════ */
+(function buildTypes() {
+  const counts = {};
+  TABLES.forEach(tbl => tbl.columns.forEach(col => { counts[col.type] = (counts[col.type]||0)+1; }));
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+
+  const grid = document.getElementById('dtype-grid');
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([type, count]) => {
+    const dm = DTYPE_META[type] || { label: type, color:'#888' };
+    const pct = Math.round(count/total*100);
+    const tile = document.createElement('div');
+    tile.className = 'dtype-tile';
+    tile.innerHTML = `<div class="count" style="color:${dm.color}">${count}</div>
+      <div class="name">${dm.label}</div>
+      <div style="color:var(--muted);font-size:.75rem;margin-top:2px">${pct}% of all columns</div>
+      <div class="bar" style="background:${dm.color};width:${pct}%"></div>`;
+    grid.appendChild(tile);
+  });
+
+  // Simple bar chart on canvas
+  const canvas = document.getElementById('dtype-chart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.parentElement.clientWidth - 48 || 700;
+  canvas.height = 200;
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const barW = Math.floor(canvas.width / entries.length) - 10;
+  const maxVal = Math.max(...entries.map(e=>e[1]));
+  entries.forEach(([type, count], i) => {
+    const dm = DTYPE_META[type] || { color:'#888' };
+    const x = i * (barW + 10) + 5;
+    const barH = Math.round((count / maxVal) * 150);
+    const y = 170 - barH;
+    // Bar
+    const grad = ctx.createLinearGradient(0, y, 0, 170);
+    grad.addColorStop(0, dm.color); grad.addColorStop(1, dm.color + '44');
+    ctx.fillStyle = grad; ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, 4) : ctx.rect(x, y, barW, barH);
+    ctx.fill();
+    // Count label
+    ctx.fillStyle = '#e8eaf6'; ctx.font = 'bold 13px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText(count, x + barW/2, y - 6);
+    // Type label
+    ctx.fillStyle = '#8890b5'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+    const lbl = (DTYPE_META[type]||{label:type}).label;
+    ctx.fillText(lbl.length > 8 ? lbl.slice(0,8)+'…' : lbl, x + barW/2, 188);
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   DETAIL PANEL
+═══════════════════════════════════════════════════════ */
+function openPanel(tbl) {
+  const panel = document.getElementById('detail-panel');
+  document.getElementById('panel-title').textContent = tbl.name;
+  document.getElementById('panel-sub').textContent = tbl.desc;
+  const fields = document.getElementById('panel-fields');
+  fields.innerHTML = '';
+  tbl.columns.forEach(col => {
+    const dm = DTYPE_META[col.type] || { label: col.type, cls:'dt-text', color:'#888' };
+    const row = document.createElement('div');
+    row.className = 'detail-field';
+    row.innerHTML = `<span class="detail-field-name">
+      ${col.pk?'🔑 ':''}${col.fk?'🔗 ':''}${col.img?'🖼️ ':''}${col.name}
+      <br><small style="font-size:.7rem;color:#555">${col.field}</small>
+    </span>
+    <span class="dtype-badge ${dm.cls}">${dm.label}</span>`;
+    fields.appendChild(row);
+    if(col.fk) {
+      const rel = document.createElement('div');
+      rel.style.cssText='font-size:.73rem;color:#00d4aa;padding:2px 0 6px;';
+      const linked = TABLES.find(t=>t.id===col.fk);
+      rel.textContent = '→ Linked to: ' + (linked ? linked.name : col.fk);
+      fields.appendChild(rel);
+    }
+  });
+  panel.classList.add('open');
+}
+document.getElementById('panel-close').addEventListener('click', () => {
+  document.getElementById('detail-panel').classList.remove('open');
+});
+
+
+/* ═══════════════════════════════════════════════════════
+   TAB 4 ADDONS: ESCALATION + EDIT RULES
+═══════════════════════════════════════════════════════ */
+(function buildFlowAddons() {
+  // Escalation cards
+  const escalCards = [
+    { title: 'Approval Authority Escalation', desc: 'Higher-level approvers can bypass lower approval levels to speed up decision-making and reduce cycle times without losing governance.', color: '#6c63ff' },
+    { title: 'Skipped Approval Records', desc: 'Lower levels are marked Skipped — their records still exist in PR Approval Tables, preserving a complete audit trail and compliance visibility.', color: '#ffa94d' },
+    { title: 'Balance of Efficiency & Compliance', desc: 'The bypass model streamlines routing while maintaining approval history, satisfying both operational speed and regulatory requirements.', color: '#00d4aa' },
+    { title: 'Executive Approval Support', desc: 'Senior executives who hold authority across multiple levels can approve a request in a single action, covering all required levels simultaneously.', color: '#d8b4fe' },
+  ];
+  const escGrid = document.getElementById('escalation-grid');
+  escalCards.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'escalation-card';
+    div.style.borderLeftColor = c.color;
+    div.innerHTML = `<h5 style="color:${c.color}">${c.title}</h5><p>${c.desc}</p>`;
+    escGrid.appendChild(div);
+  });
+
+  // Edit rule cards
+  const editRules = [
+    { title: 'Requester Edit Window', desc: 'Requesters can create and modify requests only while status is New or after a Rejection is returned to them. Submission locks the record.', color: '#a3e635' },
+    { title: 'Approval Integrity', desc: 'Removing edit rights during approval ensures the data reviewers see is unchanged from submission — preventing mid-approval tampering.', color: '#6c63ff' },
+    { title: 'Rejection & Resubmission', desc: 'When a request is rejected, ownership returns to the requester. After corrections, they resubmit and the full approval chain restarts.', color: '#ffa94d' },
+    { title: 'Governance & Compliance', desc: 'Status-driven controls are enforced via application logic and Dataverse security, ensuring consistent governance across all access paths.', color: '#74c0fc' },
+  ];
+  const erGrid = document.getElementById('edit-rule-cards');
+  editRules.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'edit-rule-card';
+    div.style.borderLeft = `4px solid ${c.color}`;
+    div.innerHTML = `<h5 style="color:${c.color};margin-bottom:5px">${c.title}</h5><p>${c.desc}</p>`;
+    erGrid.appendChild(div);
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 6: ARCHITECTURE
+═══════════════════════════════════════════════════════ */
+(function buildArch() {
+  const tiles = [
+    { icon: '📱', title: 'Power Apps', color: '#6c63ff', desc: 'Users create purchase requests, manage line items, upload supporting documentation, track request status, and review approval history through a unified canvas or model-driven app.' },
+    { icon: '🗄️', title: 'Dataverse', color: '#00d4aa', desc: 'Central transactional platform storing all business records: Purchase Requests, PR Details, PR AttachmentsF, Approvers List, and PR Approval Tables. Enforces security and provides native auditing.' },
+    { icon: '⚡', title: 'Power Automate', color: '#ffa94d', desc: 'Orchestrates submission processing and approval routing. Evaluates department, site, total cost, approval thresholds, and the approver matrix — then creates approval records and notifies approvers automatically.' },
+    { icon: '📊', title: 'Power BI', color: '#74c0fc', desc: 'Delivers reporting and governance insights: approval cycle times, spending trends, approval backlogs, and compliance metrics. Administrators and auditors track procurement performance without accessing raw records.' },
+  ];
+  const tileGrid = document.getElementById('arch-tiles');
+  tiles.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'arch-tile';
+    div.style.borderTopColor = t.color;
+    div.style.setProperty('--tile-color', t.color);
+    div.style.borderTop = `3px solid ${t.color}`;
+    div.innerHTML = `<div class="arch-icon">${t.icon}</div>
+      <h4 style="color:${t.color}">${t.title}</h4>
+      <p>${t.desc}</p>`;
+    tileGrid.appendChild(div);
+  });
+
+  const overviewCards = [
+    { title: 'Centralised Approval Workflow', desc: 'Replaces email approvals with a structured, auditable workflow for purchase requests and line items.', color: '#6c63ff' },
+    { title: 'Dataverse Data Model', desc: 'Dataverse stores purchase requests, line items, approvals, attachments, and configuration data securely and centrally.', color: '#00d4aa' },
+    { title: 'Automated Approval Routing', desc: 'Power Automate evaluates approval criteria and routes requests automatically based on thresholds and approval levels.', color: '#ffa94d' },
+    { title: 'Role-Based Security & Governance', desc: 'Controlled access for teams, managers, and auditors ensures security and compliance with enterprise governance requirements.', color: '#ff6b6b' },
+  ];
+  const ovGrid = document.getElementById('arch-overview');
+  overviewCards.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'overview-card';
+    div.style.borderLeftColor = c.color;
+    div.innerHTML = `<h5 style="color:${c.color};margin-bottom:6px">${c.title}</h5><p style="font-size:.81rem;color:var(--muted);line-height:1.55">${c.desc}</p>`;
+    ovGrid.appendChild(div);
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════
+   TAB 7: SECURITY ROLES
+═══════════════════════════════════════════════════════ */
+(function buildSecurity() {
+  const roles = [
+    {
+      icon: '👤', title: 'Requester', type: 'Business User', color: '#6c63ff',
+      desc: 'Employees who create and submit purchase requests, manage their own line items, and monitor approval status.',
+      can: ['Create Requests', 'Add Line Items', 'Upload Attachments', 'View Own Requests', 'Monitor Approval Status'],
+      cannot: ['Approve Requests', 'Modify Approval Matrix'],
+    },
+    {
+      icon: '✅', title: 'Approver', type: 'Decision Maker', color: '#00d4aa',
+      desc: 'Users assigned to review and action purchase requests at their designated approval level.',
+      can: ['Review Assigned Requests', 'View Attachments & Line Items', 'Approve / Reject / Return', 'Add Approval Comments'],
+      cannot: ['Modify Requester Data After Submission', 'Alter Approval Matrix'],
+    },
+    {
+      icon: '🛒', title: 'Purchasing', type: 'Procurement Team', color: '#ffa94d',
+      desc: 'Procurement personnel responsible for processing requests post-approval and managing PO numbers.',
+      can: ['View All Requests', 'Update Purchasing Notes', 'Maintain PO Numbers', 'Adjust Due Dates', 'Monitor Attachments'],
+      cannot: ['Maintain Approval Matrix (without Admin role)'],
+    },
+    {
+      icon: '🔧', title: 'Administrator', type: 'Process Owner', color: '#ff6b6b',
+      desc: 'Business owners and Power Platform admins with full access to all records and system configuration.',
+      can: ['Full Access to All Records', 'Manage Approval Matrix', 'Maintain Departments & Thresholds', 'Resolve Routing Issues', 'Reassign Approvals', 'Review Audit History'],
+      cannot: [],
+    },
+    {
+      icon: '🔍', title: 'Auditor', type: 'Read-Only Access', color: '#d8b4fe',
+      desc: 'Finance, internal audit, compliance teams, and management who review procurement data without operational access.',
+      can: ['Read Purchase Requests', 'View Line Items', 'View Approval History', 'View Attachment Metadata'],
+      cannot: ['Create / Edit / Delete Records', 'Approve or Reject Requests'],
+    },
+  ];
+
+  const grid = document.getElementById('role-grid');
+  roles.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'role-card';
+    const canHtml = r.can.map(p => `<span class="perm perm-can">✓ ${p}</span>`).join('');
+    const cannotHtml = r.cannot.map(p => `<span class="perm perm-no">✗ ${p}</span>`).join('');
+    card.innerHTML = `
+      <div class="role-card-hdr" style="border-top:3px solid ${r.color}">
+        <div class="role-card-icon" style="background:${r.color}22;color:${r.color}">${r.icon}</div>
+        <div><h4 style="color:${r.color}">${r.title}</h4><div class="role-type">${r.type}</div></div>
+      </div>
+      <div class="role-card-body">
+        <p>${r.desc}</p>
+        <div class="role-perms" style="margin-top:12px">${canHtml}${cannotHtml}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // Privilege Matrix
+  const privData = [
+    {
+      table: 'Purchase Requests',
+      req: { cls:'priv-limited', text:'Create · Read Own · Write (Draft)' },
+      appr: { cls:'priv-read', text:'Read Assigned' },
+      purch: { cls:'priv-limited', text:'Read All · Write Selected' },
+      admin: { cls:'priv-full', text:'Full Access' },
+      aud: { cls:'priv-read', text:'Read All' },
+    },
+    {
+      table: 'Purchase Request Details',
+      req: { cls:'priv-limited', text:'Create / Read / Write (Draft)' },
+      appr: { cls:'priv-read', text:'Read Related' },
+      purch: { cls:'priv-limited', text:'Read All · Limited Write' },
+      admin: { cls:'priv-full', text:'Full Access' },
+      aud: { cls:'priv-read', text:'Read All' },
+    },
+    {
+      table: 'PR AttachmentsF',
+      req: { cls:'priv-limited', text:'Create / Read (Draft)' },
+      appr: { cls:'priv-read', text:'Read Related' },
+      purch: { cls:'priv-read', text:'Read All' },
+      admin: { cls:'priv-full', text:'Full Access' },
+      aud: { cls:'priv-meta', text:'Read Metadata' },
+    },
+    {
+      table: 'PR Approval Tables',
+      req: { cls:'priv-read', text:'Read Status' },
+      appr: { cls:'priv-write', text:'Read / Write Assigned' },
+      purch: { cls:'priv-read', text:'Read All' },
+      admin: { cls:'priv-full', text:'Full Access' },
+      aud: { cls:'priv-read', text:'Read All' },
+    },
+    {
+      table: 'Approvers List',
+      req: { cls:'priv-read', text:'Read Only' },
+      appr: { cls:'priv-read', text:'Read Only' },
+      purch: { cls:'priv-read', text:'Read Only' },
+      admin: { cls:'priv-full', text:'Full Access' },
+      aud: { cls:'priv-read', text:'Read Only' },
+    },
+  ];
+
+  const roleColors = { req:'#6c63ff', appr:'#00d4aa', purch:'#ffa94d', admin:'#ff6b6b', aud:'#d8b4fe' };
+  const roleLabels = { req:'Requester', appr:'Approver', purch:'Purchasing', admin:'Admin', aud:'Auditor' };
+  const cols = ['req','appr','purch','admin','aud'];
+
+  let tbl = '<table class="priv-matrix"><thead><tr><th class="row-head">Table</th>';
+  cols.forEach(c => { tbl += `<th style="color:${roleColors[c]}">${roleLabels[c]}</th>`; });
+  tbl += '</tr></thead><tbody>';
+  privData.forEach(row => {
+    tbl += `<tr><td>${row.table}</td>`;
+    cols.forEach(c => { tbl += `<td><span class="${row[c].cls}">${row[c].text}</span></td>`; });
+    tbl += '</tr>';
+  });
+  tbl += '</tbody></table>';
+
+  // Legend
+  tbl += `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;">
+    <span><span class="priv-full">■</span> Full Access</span>
+    <span><span class="priv-write">■</span> Read/Write (scoped)</span>
+    <span><span class="priv-limited">■</span> Limited (status-gated)</span>
+    <span><span class="priv-read">■</span> Read Only</span>
+    <span><span class="priv-meta">■</span> Metadata only</span>
+  </div>`;
+
+  document.getElementById('priv-wrap').innerHTML = tbl;
+})();
+
+</script>
+</body>
+</html>

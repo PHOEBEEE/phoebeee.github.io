@@ -590,3 +590,39 @@ mark { background: color-mix(in srgb, var(--brand-2) 35%, transparent); color: i
   .reveal { transition: none; opacity: 1; transform: none; }
   * { transition: none !important; }
 }
+
+
+/* ---------- Portfolio artifact links ---------- */
+.case__actions {
+  display: flex; flex-wrap: wrap; gap: .65rem; margin-top: .7rem;
+}
+.case__actions .btn {
+  min-height: 42px; padding: .65rem 1rem; font-size: .88rem;
+}
+.artifact-callout {
+  margin-top: 1.8rem;
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand) 26%, var(--border));
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.artifact-callout__grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem;
+}
+.artifact-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+  color: inherit;
+  transition: transform .2s var(--ease), border-color .2s, box-shadow .2s;
+}
+.artifact-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+  box-shadow: var(--shadow-lg);
+}
+.artifact-card strong { display:block; color: var(--text); margin-bottom: .25rem; }
+.artifact-card span { display:block; color: var(--text-faint); font-size: .84rem; line-height: 1.5; }

@@ -117,13 +117,13 @@ window.PROJECT_DETAILS = {
 "technologies": "Power Apps; Dataverse; Power Automate; Power BI"
 },
 "14": {
-"name": "Mold Tracking and Demold Release System",
+"name": "Mold Maintenance, Release and Part Pull Tracker",
 "area": "Manufacturing Quality & Operations",
-"business": "Improve visibility into mold status, demold readiness, and production release activities.",
-"architecture": "Dataverse-backed tracking app with status fields, responsible users, timestamps, and release checkpoints.",
-"methodology": "Manufacturing process mapping, status lifecycle design, role-based screens, and operational reporting.",
-"process": "Production users update mold status; supervisors confirm demold readiness and release; history supports audit and troubleshooting.",
-"technologies": "Power Apps; Dataverse; Power Automate; Power BI"
+"business": "Control mold release, rework, and part-pull tracking so technicians know when a mold is OK, when a release is required, and how many parts have been pulled since the last release or rework.",
+"architecture": "Power Apps canvas app over mold records with search/filter screens, edit forms, attachment capture, read-only tracking counters, and a release/part-pull action screen that updates counters and status fields.",
+"methodology": "Mapped the shop-floor mold lifecycle, separated upload, maintenance, and release/part-pull actions into dedicated screens, and designed warning states around release thresholds and rework history.",
+"process": "User uploads a new mold, maintenance users edit the record and rework details, technicians scan or enter an MLD number, review counters, record part pulls, apply releases when required, and the app resets the release counter after release.",
+"technologies": "Power Apps Canvas; SharePoint/Dataverse; Power Fx; Attachments; Search and filters; Release counters; Rework tracking"
 },
 "15": {
 "name": "Digital Manufacturing Checklist Automation",
@@ -1016,4 +1016,57 @@ window.PROJECT_DETAILS = {
 "process": "",
 "technologies": "Microsoft Purview; Sensitivity Labels; SharePoint/OneDrive; Compliance"
 }
+,
+"114": {
+"name": "NCR Control Center and Approval Workflow",
+"area": "Manufacturing Quality & Operations",
+"business": "Centralize nonconformance records so quality users can create, review, disposition, route supplier/training actions, capture evidence, and approve NCRs from one controlled application instead of spreadsheets and email.",
+"architecture": "Power Apps canvas experience over structured NCR data, with search-first list screens, KPI tiles, detail panels, multi-step workflow screens, attachment controls, and an approval workbench connected to the underlying NCR records and routing fields.",
+"methodology": "Mapped the quality NCR lifecycle end to end, separated each business stage into a focused screen, designed role-specific navigation for quality users and approvers, added validation/evidence capture, and iterated on screens for fast triage and controlled closure.",
+"process": "User creates or opens an NCR, enters part and issue details, captures review information, completes disposition, records training or supplier actions when required, attaches supporting evidence, routes to approval, approver reviews context and approves or rejects, and the app confirms the save or closure.",
+"technologies": "Power Apps Canvas; Dataverse/SharePoint; Power Automate; Approvals; Attachments; Search and filters; Role-based navigation; Quality workflow design"
+}
+,
+"115": {
+"name": "Purchase Order Request Canvas App and Approval Inbox",
+"area": "Dataverse Apps & Automation",
+"business": "Give requesters and approvers one controlled procurement workspace for purchase request intake, line items, attachments, approval routing, approval decisions, and status visibility instead of spreadsheet or email-based handoffs.",
+"architecture": "Dataverse-backed purchase request solution with request header, line item, attachment, approver matrix, and approval-history records. A Power Apps canvas app provides the requester portal, four-step new request wizard, approval inbox, and approval-decision screen; Power Automate and approval-routing logic move records through pending, future-pending, approved, rejected, skipped, and returned states.",
+"methodology": "Mapped the requester journey and approver journey separately, designed a draft-first pattern for attachments, externalized approval routing into matrix-style records, created status tabs and KPI cards for visibility, and tested low-value, high-value, pending, future-pending, approval, rejection, and return-for-revision scenarios.",
+"process": "Requester creates a purchase request, fills request information, adds line items, saves a draft, attaches supporting files or images, reviews the final summary, and submits. The system calculates totals and routes approvals. Approvers open their inbox, filter by status, review request details and history, then approve, reject, or return the request for revision with comments.",
+"technologies": "Power Apps Canvas; Dataverse; Power Automate; Approval Matrix; Power Fx; Attachments; Role-based views; Procurement workflow design; Approval history"
+}
+
+,
+"116": {
+"name": "Copilot Cowork Project Portfolio Widgets Suite",
+"area": "Copilot, AI & Knowledge Agents",
+"business": "Turn raw Dataverse project data into executive-ready Copilot experiences so leaders can review portfolio health, milestones, risks, budgets, and ownership directly inside Copilot instead of reading plain-text summaries or tables.",
+"architecture": "Dataverse project and project-member data is shaped through prompt/tool outputs into structuredContent contracts, then rendered as interactive Copilot / MCP Apps widgets including dashboard tabs, carousel cards, persona boards, milestone views, budget trackers, and searchable portfolio grids.",
+"methodology": "Started from the PMO questions leaders actually ask, designed widget patterns for each decision scenario, mapped consistent fields and status logic across visuals, iterated on layout/readability, and kept sample-data transparency visible so outputs stayed trustworthy in demo and design review settings.",
+"process": "Copilot retrieves or receives portfolio data, formats it into structured widget payloads, and renders tailored UI components such as portfolio explorers, critical-project carousels, milestone celebration cards, manager persona boards, newsletter-style summaries, budget trackers, and detailed project tables for follow-up action.",
+"technologies": "Microsoft 365 Copilot; Copilot Cowork; MCP Apps / Render UI; structuredContent; Dataverse; AI Builder Run a Prompt; Widget UX; Portfolio analytics"
+},
+"117": {
+"name": "Employee Leave Tracker Canvas App",
+"area": "SharePoint & Microsoft 365",
+"business": "Centralize employee leave requests, approvals, team availability, coverage handoff, and leave-status visibility in one HR canvas app instead of fragmented email, spreadsheets, and calendar follow-ups.",
+"architecture": "Power Apps canvas front end connected to SharePoint lists for leave requests, employee/context fields, coverage data, approver decisions, and supporting documents. The app uses role-based navigation, dashboard cards, bounded SharePoint queries, calendar-style availability views, request queues, and detail panels for requesters, approvers, and HR managers.",
+"methodology": "Separated the employee, approver, and HR manager journeys; designed SharePoint-friendly filtering and bounded data windows; added KPI cards and selected-record detail panels for fast review; and created approval/coverage checks so managers can make decisions with the necessary handoff context.",
+"process": "Employee creates a leave request, selects leave type and dates, adds work handoff notes, attaches supporting documents, and submits. Approver reviews the queue, checks coverage and leave balance, then approves, rejects, or requests more information. HR and managers monitor the dashboard, team calendar, reports, and coverage alerts.",
+"technologies": "Power Apps Canvas; SharePoint Lists; Power Automate; Power Fx; Approvals; Calendar UI; Attachments; Role-based navigation; HR leave workflow"
+}
+
+
+,
+"118": {
+"name": "Equipment Tracker and Preventive Maintenance System",
+"area": "Manufacturing Quality & Operations",
+"business": "Centralize equipment assets, preventive-maintenance criteria, scheduled work, completed maintenance records, escalations, and reporting so maintenance teams can manage equipment health from one controlled app.",
+"architecture": "Power Apps canvas front end organized around MaintenancePro navigation: dashboard, equipment register, criteria/tasks, maintenance schedule, maintenance records, escalations, reports, departments, users/roles, and settings. The app works over structured equipment and maintenance records with search, filters, KPI cards, list views, form screens, and reporting summaries.",
+"methodology": "Split the maintenance process into asset master data, maintenance rules, scheduled work, actual maintenance records, escalations, and reporting. Built dashboard-first visibility, then added searchable operational tables and form screens for creating equipment and criteria records.",
+"process": "Maintenance users create equipment records, define preventive-maintenance criteria and frequency rules, schedule maintenance, log completed maintenance work and new hours, track escalations when work is overdue or blocked, and review reports for completion rate, active escalations, total hours, and equipment distribution by department.",
+"technologies": "Power Apps Canvas; Power Fx; Equipment register; Preventive maintenance schedules; Criteria and task rules; Maintenance records; Escalation tracking; Reports; Role-based navigation"
+}
+
 };
